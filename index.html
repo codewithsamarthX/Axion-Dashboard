@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Axion Interface - Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap');
+
+    :root {
+      --primary-color: #00ffcc;
+      --secondary-color: #38bdf8;
+      --alert-color: #ff4444;
+      --bg-dark: #0a101b;
+      --bg-medium: #111a28;
+      --panel-bg: rgba(10, 16, 27, 0.7);
+      --border-color: rgba(0, 255, 204, 0.3);
+      --log-scrollbar-thumb: #00ffccaa;
+      --log-scrollbar-track: #1a202c;
+      --focus-outline: 2px solid var(--primary-color);
+    }
+
+    body {
+      font-family: 'Orbitron', sans-serif;
+      background: radial-gradient(circle at 50% 50%, var(--bg-medium), var(--bg-dark));
+      color: #e0f7fa; /* Improved contrast */
+      min-height: 100vh;
+      margin: 0;
+    }
+
+    .dashboard-container {
+      border: 2px solid var(--border-color);
+      box-shadow: 0 0 20px rgba(0, 255, 204, 0.2);
+      backdrop-filter: blur(5px);
+      background-color: var(--panel-bg);
+    }
+
+    .glow-text {
+      text-shadow: 0 0 8px var(--primary-color);
+    }
+
+    .status-gauge {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: conic-gradient(var(--primary-color) 0deg, var(--bg-medium) 0deg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      transition: background 0.5s ease;
+      user-select: none;
+    }
+
+    .status-gauge::before {
+      content: '';
+      position: absolute;
+      width: 80px;
+      height: 80px;
+      background-color: var(--bg-medium);
+      border-radius: 50%;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+
+    .gauge-text {
+      position: relative;
+      z-index: 10;
+      user-select: none;
+    }
+
+    .log-container {
+      scrollbar-width: thin;
+      scrollbar-color: var(--log-scrollbar-thumb) var(--log-scrollbar-track);
+    }
+
+    .log-container::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .log-container::-webkit-scrollbar-track {
+      background: var(--log-scrollbar-track);
+    }
+
+    .log-container::-webkit-scrollbar-thumb {
+      background: var(--log-scrollbar-thumb);
+      border-radius: 3px;
+    }
+
+    .listening {
+      animation: pulse 1s infinite;
+      box-shadow: 0 0 10px var(--primary-color);
+    }
+
+    input:focus, button:focus {
+      outline: none;
+      box-shadow: 0 0 12px var(--primary-color), inset 0 0 8px var(--primary-color);
+    }
+
+    /* Improved button hover/focus states */
+    .quick-command-btn {
+      transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, transform 0.1s ease-in-out;
+      border: 1px solid transparent;
+      box-shadow: inset 0 0 5px rgba(0, 255, 204, 0.1);
+    }
+
+    .quick-command-btn:hover,
+    .quick-command-btn:focus {
+      background-color: #06b6d4; /* Tailwind cyan-500 */
+      border-color: #00ffcc;
+      box-shadow: 0 0 10px var(--primary-color), inset 0 0 8px var(--primary-color);
+      transform: scale(1.02);
+    }
+
+    /* Emergency button distinct style */
+    .quick-command-btn.emergency {
+      background-color: #b91c1c; /* Tailwind red-700 */
+      color: white;
+      box-shadow: inset 0 0 5px rgba(255, 68, 68, 0.2);
+    }
+
+    .quick-command-btn.emergency:hover,
+    .quick-command-btn.emergency:focus {
+      background-color: #dc2626; /* Tailwind red-600 */
+      border-color: #ff4444;
+      box-shadow: 0 0 10px var(--alert-color), inset 0 0 8px var(--alert-color);
+      transform: scale(1.02);
+    }
+
+    /* System Status Indicator */
+    .status-indicator {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      transition: background-color 0.5s ease;
+      animation: pulse-status 2s infinite;
+    }
+
+    .status-indicator.optimal {
+      background-color: #00ffcc;
+      box-shadow: 0 0 8px #00ffcc;
+    }
+    .status-indicator.warning {
+      background-color: #ffcc00;
+      box-shadow: 0 0 8px #ffcc00;
+    }
+    .status-indicator.critical {
+      background-color: #ff4444;
+      box-shadow: 0 0 8px #ff4444;
+    }
+
+    @keyframes pulse-status {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.1); opacity: 0.8; }
+    }
+
+    /* Spinner */
+    .spinner {
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      border-left-color: var(--primary-color);
+      border-radius: 50%;
+      width: 1.25rem;
+      height: 1.25rem;
+      animation: spin 1s linear infinite;
+      display: inline-block;
+      vertical-align: middle;
+      margin-left: 0.5rem;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Responsive Adjustments */
+    @media (max-width: 768px) {
+      .dashboard-container {
+        padding: 1.5rem;
+      }
+      .dashboard-container > section {
+        grid-template-columns: 1fr;
+      }
+      .dashboard-container > header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .dashboard-container > header div {
+        text-align: left;
+      }
+    }
+  </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-6 bg-gray-900">
+  <main class="w-full max-w-6xl dashboard-container rounded-3xl p-8 space-y-8" role="main" aria-label="Axion Dashboard">
+    <header class="flex flex-col sm:flex-row justify-between items-center border-b pb-4 border-gray-700" role="banner">
+      <h1 class="text-4xl font-bold glow-text text-cyan-400 mb-4 sm:mb-0" aria-label="Axion Dashboard Title">AXION</h1>
+      <div class="text-right flex items-center space-x-2" aria-live="polite" aria-atomic="true">
+        <div id="systemHealth" class="status-indicator optimal"></div>
+        <div>
+          <p class="text-sm text-gray-400">Mode Activated</p>
+          <p id="currentMode" class="text-2xl text-white font-bold" aria-live="polite" aria-atomic="true">Tower</p>
+        </div>
+      </div>
+    </header>
+
+    <section class="grid grid-cols-1 md:grid-cols-4 gap-6" aria-label="Status Gauges and System Overview">
+      <article class="flex flex-col items-center justify-center p-4 rounded-lg border border-gray-700/50 bg-gray-800/40 col-span-1 md:col-span-2" aria-label="Status Gauges">
+        <h2 class="text-2xl font-semibold mb-4 text-white">System Status</h2>
+        <div class="flex space-x-8 mb-4">
+          <div class="flex flex-col items-center" role="group" aria-label="Energy Status">
+            <div class="status-gauge" id="energyGauge" aria-live="polite" aria-atomic="true" aria-label="Energy output gauge" title="Current Energy Output">
+              <span class="gauge-text text-xl font-bold text-green-400" id="energyOutput">93%</span>
+            </div>
+            <span class="mt-2 text-sm text-gray-400">ENERGY</span>
+          </div>
+          <div class="flex flex-col items-center" role="group" aria-label="Reactor Status">
+            <div class="status-gauge" id="reactorGauge" aria-live="polite" aria-atomic="true" aria-label="Reactor output gauge" title="Current Reactor Status">
+              <span class="gauge-text text-xl font-bold text-blue-400" id="reactorOutput">97%</span>
+            </div>
+            <span class="mt-2 text-sm text-gray-400">REACTOR</span>
+          </div>
+        </div>
+        <div class="flex flex-col items-center" role="group" aria-label="Suit Integrity Status">
+          <div class="status-gauge" id="integrityGauge" aria-live="polite" aria-atomic="true" aria-label="Suit integrity gauge" title="Current Suit Integrity">
+            <span class="gauge-text text-xl font-bold text-purple-400" id="integrityOutput">100%</span>
+            </div>
+            <p class="mt-2 text-sm text-gray-400">SUIT INTEGRITY</p>
+          </div>
+        </article>
+  
+        <section class="md:col-span-2 p-4 rounded-lg border border-gray-700/50 bg-gray-800/40" aria-label="System Overview">
+          <h2 class="text-xl font-semibold mb-2 text-white">System Overview</h2>
+          <div class="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <p class="text-gray-400">Lights:</p>
+              <p id="lightsStatus" class="text-green-400 font-bold" aria-live="polite" aria-atomic="true">100%</p>
+            </div>
+            <div>
+              <p class="text-gray-400">Fan:</p>
+              <p id="fanStatus" class="text-yellow-400 font-bold" aria-live="polite" aria-atomic="true">Off</p>
+            </div>
+            <div>
+              <p class="text-gray-400">Door:</p>
+              <p id="doorStatus" class="text-red-400 font-bold" aria-live="polite" aria-atomic="true">Closed</p>
+            </div>
+            <div>
+              <p class="text-gray-400">Defenses:</p>
+              <p id="defenseStatus" class="text-gray-300 font-bold" aria-live="polite" aria-atomic="true">Offline</p>
+            </div>
+            <div>
+              <p class="text-gray-400">Boosters:</p>
+              <p id="boostersStatus" class="text-gray-300 font-bold" aria-live="polite" aria-atomic="true">Offline</p>
+            </div>
+          </div>
+          <p id="systemStatus" class="mt-4 text-gray-500 italic text-sm" aria-live="polite" aria-atomic="true">
+            Tower operating within optimal parameters. Security grid stable.
+          </p>
+        </section>
+      </section>
+  
+      <section class="grid grid-cols-1 md:grid-cols-2 gap-6" aria-label="Commands and Logs">
+        <section class="p-4 rounded-lg border border-gray-700/50 bg-gray-800/40" aria-label="Quick Commands">
+          <h2 class="text-xl font-semibold mb-3 text-white">Quick Commands</h2>
+          <div class="grid grid-cols-2 gap-3">
+            <button type="button" data-command="toggle lights" class="quick-command-btn p-3 bg-gray-700 rounded-lg" aria-label="Toggle lights" title="Toggle the lights on or off">TOGGLE LIGHTS</button>
+            <button type="button" data-command="scan area" class="quick-command-btn p-3 bg-gray-700 rounded-lg" aria-label="Scan area" title="Scan the surrounding area for threats">SCAN AREA</button>
+            <button type="button" data-command="system status" class="quick-command-btn p-3 bg-gray-700 rounded-lg" aria-label="System status" title="Run a full system diagnostic">STATUS</button>
+            <button type="button" data-command="toggle fan" class="quick-command-btn p-3 bg-gray-700 rounded-lg" aria-label="Toggle fan" title="Toggle the ventilation fan on or off">TOGGLE FAN</button>
+            <button type="button" data-command="toggle defenses" class="quick-command-btn p-3 bg-gray-700 rounded-lg" aria-label="Toggle defenses" title="Toggle the defense grid online or offline">TOGGLE DEFENSES</button>
+            <button type="button" data-command="toggle boosters" class="quick-command-btn p-3 bg-gray-700 rounded-lg" aria-label="Toggle boosters" title="Toggle the boosters on or off">TOGGLE BOOSTERS</button>
+            <button type="button" data-command="toggle mode" class="quick-command-btn p-3 bg-gray-700 rounded-lg" aria-label="Toggle mode" title="Switch between Tower and Armor modes">TOGGLE MODE</button>
+            <button type="button" data-command="toggle door" class="quick-command-btn p-3 bg-gray-700 rounded-lg" aria-label="Toggle door" title="Open or close the main door">TOGGLE DOOR</button>
+            <button type="button" data-command="ping" class="quick-command-btn p-3 bg-gray-700 rounded-lg" aria-label="Ping" title="Send a diagnostic ping">PING</button>
+            <button type="button" data-command="system reboot" class="quick-command-btn p-3 bg-gray-700 rounded-lg" aria-label="System Reboot" title="Restart all system functions">REBOOT</button>
+            <button type="button" data-command="emergency shutdown" class="quick-command-btn emergency p-3 rounded-lg" aria-label="Emergency shutdown" title="Initiate an immediate and total system shutdown">EMERGENCY</button>
+          </div>
+        </section>
+  
+        <section class="p-4 rounded-lg border border-gray-700/50 bg-gray-800/40 flex flex-col" aria-label="Command Log">
+          <h2 class="text-xl font-semibold mb-3 text-white">Command Log</h2>
+          <div id="logContainer" class="log-container flex-grow h-64 overflow-y-auto space-y-3 font-mono text-sm" role="log" aria-live="polite" aria-atomic="false" tabindex="0">
+            <div class="text-gray-300">
+              <span class="text-cyan-400">Axion:</span> Systems online. Ready for command.
+            </div>
+          </div>
+  
+          <div class="mt-4 flex space-x-3">
+            <button type="button" id="clearLogBtn" class="px-5 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg" title="Clear the command log">CLEAR LOG</button>
+          </div>
+  
+          <form id="commandForm" class="mt-4 flex space-x-3" role="search" aria-label="Command input form">
+            <input
+              type="text"
+              id="commandInput"
+              placeholder="Enter custom command..."
+              class="flex-1 bg-gray-700 text-white px-4 py-2 rounded-lg border border-gray-600"
+              autocomplete="off"
+              spellcheck="false"
+              aria-label="Command input"
+            />
+            <button type="button" id="voiceBtn" class="px-3 py-2 bg-gray-700 rounded-lg" aria-pressed="false" aria-label="Toggle voice command" title="Toggle voice command">
+              <span id="voiceBtnIcon">🎤</span>
+            </button>
+            <button type="submit" class="px-5 py-2 bg-cyan-600 hover:bg-cyan-500 rounded-lg" aria-label="Send command">SEND</button>
+          </form>
+        </section>
+      </section>
+    </main>
+  
+    <script>
+      class DashboardManager {
+        constructor() {
+          this.dom = {
+            logContainer: document.getElementById('logContainer'),
+            commandForm: document.getElementById('commandForm'),
+            commandInput: document.getElementById('commandInput'),
+            currentMode: document.getElementById('currentMode'),
+            systemStatus: document.getElementById('systemStatus'),
+            lightsStatus: document.getElementById('lightsStatus'),
+            fanStatus: document.getElementById('fanStatus'),
+            doorStatus: document.getElementById('doorStatus'),
+            defenseStatus: document.getElementById('defenseStatus'),
+            boostersStatus: document.getElementById('boostersStatus'),
+            energyOutput: document.getElementById('energyOutput'),
+            reactorOutput: document.getElementById('reactorOutput'),
+            integrityOutput: document.getElementById('integrityOutput'),
+            energyGauge: document.getElementById('energyGauge'),
+            reactorGauge: document.getElementById('reactorGauge'),
+            integrityGauge: document.getElementById('integrityGauge'),
+            voiceBtn: document.getElementById("voiceBtn"),
+            voiceBtnIcon: document.getElementById("voiceBtnIcon"),
+            quickCommandButtons: document.querySelectorAll('.quick-command-btn'),
+            systemHealthIndicator: document.getElementById('systemHealth'),
+            clearLogBtn: document.getElementById('clearLogBtn')
+          };
+  
+          this.initialState = {
+            mode: "Tower",
+            lights: 100,
+            fanSpeed: 0,
+            doorOpen: false,
+            defensesActive: false,
+            boostersActive: false,
+            boosterSpeed: 0,
+            armorDeployed: false,
+            arcReactorOutput: 97,
+            suitIntegrity: 100,
+            energyOutput: 93,
+            awaitingConfirmation: null,
+            health: 'optimal'
+          };
+  
+          this.state = new Proxy({ ...this.initialState }, {
+            set: (target, prop, value) => {
+              target[prop] = value;
+              this.updateStatusDisplay();
+              if (prop.includes('Output') || prop === 'suitIntegrity') {
+                this.updateGauges();
+                this.animateGaugeUpdate(prop);
+              }
+              this.updateHealthIndicator();
+              return true;
+            }
+          });
+  
+          this.speechRecognition = null;
+          this.isListening = false;
+          this.recognitionSupported = 'SpeechRecognition' in window || 'webkitSpeechRecognition' in window;
+  
+          this.commands = new Map([
+            ['toggle lights', { handler: () => {
+              const newIntensity = this.state.lights > 0 ? 0 : 100;
+              this.state.lights = newIntensity;
+              this.addToLog(`Lights intensity set to ${newIntensity}%.`, false);
+            }}],
+            ['scan area', { handler: () => {
+              const logEntry = this.addToLog('Scanning perimeter... <div class="spinner"></div>', false);
+              setTimeout(() => {
+                this.updateLogEntry(logEntry, 'Scan complete. No threats detected.');
+              }, 2500);
+            }}],
+            ['system status', { handler: () => {
+              this.addToLog('Running diagnostics...', false);
+              this.runDiagnostics();
+            }}],
+            ['toggle fan', {
+              handler: () => {
+                const newSpeed = this.state.fanSpeed > 0 ? 0 : 1;
+                this.state.fanSpeed = newSpeed;
+                this.addToLog(`Fan speed set to ${newSpeed}.`, false);
+              }
+            }],
+            ['toggle defenses', {
+              handler: () => {
+                this.state.defensesActive = !this.state.defensesActive;
+                this.addToLog(this.state.defensesActive ? 'Defense grid online.' : 'Defense grid offline.', false);
+              }
+            }],
+            ['toggle boosters', {
+              handler: () => {
+                const newSpeed = this.state.boosterSpeed > 0 ? 0 : 1;
+                this.state.boosterSpeed = newSpeed;
+                this.state.boostersActive = newSpeed > 0;
+                this.addToLog(this.state.boostersActive ? `Boosters engaged at ${newSpeed}%.` : 'Boosters disengaged.', false);
+              }
+            }],
+            ['toggle mode', {
+              handler: () => {
+                if (this.state.mode === 'Tower') {
+                  this.state.mode = 'Armor';
+                  this.addToLog('Armor mode engaged. Suit integrity stable.', false);
+                } else {
+                  this.state.mode = 'Tower';
+                  this.addToLog('Tower mode engaged.', false);
+                }
+              }
+            }],
+            ['toggle door', {
+              handler: () => {
+                this.state.doorOpen = !this.state.doorOpen;
+                this.addToLog(this.state.doorOpen ? 'Door opened.' : 'Door closed.', false);
+              }
+            }],
+            ['ping', {
+              handler: () => {
+                this.addToLog('Pinging system...', false);
+                setTimeout(() => this.addToLog('Pong!', false), 500);
+              }
+            }],
+            ['system reboot', {
+              handler: () => {
+                const logEntry = this.addToLog('Initiating system reboot. Please stand by... <div class="spinner"></div>', false);
+                setTimeout(() => {
+                  Object.assign(this.state, this.initialState);
+                  this.updateLogEntry(logEntry, 'System reboot complete. All systems restored to default.');
+                }, 100);
+              }
+            }],
+            ['emergency shutdown', {
+              handler: () => {
+                this.addToLog('Confirmation required for emergency shutdown. Enter "confirm shutdown" to proceed.', false);
+                this.state.awaitingConfirmation = 'emergency shutdown';
+              }
+            }],
+            ['confirm shutdown', {
+              handler: () => {
+                if (this.state.awaitingConfirmation === 'emergency shutdown') {
+                  this.state.lights = 0;
+                  this.state.fanSpeed = 0;
+                  this.state.doorOpen = false;
+                  this.state.defensesActive = false;
+                  this.state.boostersActive = false;
+                  this.state.suitIntegrity = 100;
+                  this.state.awaitingConfirmation = null;
+                  this.addToLog('Emergency shutdown procedure complete. All systems offline.', false);
+                } else {
+                  this.addToLog('Shutdown confirmation not required or invalid. Please re-enter "emergency shutdown" first.', true);
+                }
+              }
+            }]
+          ]);
+  
+          this.init();
+        }
+  
+        init() {
+          this.dom.commandForm.addEventListener('submit', (e) => this.handleCommandInput(e));
+          this.dom.quickCommandButtons.forEach(button => {
+            button.addEventListener('click', (e) => this.executeCommand(e.target.dataset.command));
+          });
+          this.dom.clearLogBtn.addEventListener('click', () => this.clearLog());
+          if (this.recognitionSupported) {
+            this.dom.voiceBtn.addEventListener('click', () => this.toggleVoiceCommand());
+            this.initSpeechRecognition();
+          } else {
+            this.dom.voiceBtn.style.display = 'none';
+            this.addToLog('Voice commands not supported in this browser.', true);
+          }
+          this.updateStatusDisplay();
+          this.updateGauges();
+          this.updateHealthIndicator();
+        }
+  
+        addToLog(message, isError = false) {
+          const logEntry = document.createElement('div');
+          const timestamp = new Date().toLocaleTimeString();
+          let logMessage = `<span class="text-gray-500">${timestamp} | </span><span class="${isError ? 'text-red-400' : 'text-cyan-400'}">Axion:</span> ${message}`;
+          logEntry.innerHTML = logMessage;
+          this.dom.logContainer.appendChild(logEntry);
+          this.dom.logContainer.scrollTop = this.dom.logContainer.scrollHeight;
+          this.animateLogEntry(logEntry);
+          return logEntry;
+        }
+
+        updateLogEntry(logEntry, message, isError = false) {
+          const timestamp = new Date().toLocaleTimeString();
+          let logMessage = `<span class="text-gray-500">${timestamp} | </span><span class="${isError ? 'text-red-400' : 'text-cyan-400'}">Axion:</span> ${message}`;
+          logEntry.innerHTML = logMessage;
+          this.dom.logContainer.scrollTop = this.dom.logContainer.scrollHeight;
+          this.animateLogEntry(logEntry);
+        }
+
+        clearLog() {
+          this.dom.logContainer.innerHTML = '';
+          this.addToLog('Log cleared.', false);
+        }
+  
+        animateLogEntry(logEntry) {
+          logEntry.style.opacity = '0';
+          logEntry.style.transform = 'translateY(10px)';
+          setTimeout(() => {
+            logEntry.style.transition = 'opacity 0.5s ease-out, transform 0.5s ease-out';
+            logEntry.style.opacity = '1';
+            logEntry.style.transform = 'translateY(0)';
+          }, 10);
+        }
+  
+        executeCommand(command) {
+          const [cmd, ...args] = command.split(' ');
+  
+          if (this.state.awaitingConfirmation && command !== 'confirm shutdown') {
+            this.addToLog('Awaiting confirmation for "emergency shutdown". Please enter "confirm shutdown" to proceed, or any other command to cancel the pending action.', true);
+            this.state.awaitingConfirmation = null;
+            return;
+          }
+  
+          // Specific commands with arguments
+          if (cmd === 'set') {
+            if (args[0] === 'fan' && args[1] === 'speed') {
+              const value = parseInt(args[2]);
+              if (!isNaN(value) && value >= 0 && value <= 5) {
+                this.state.fanSpeed = value;
+                this.addToLog(`Fan speed set to ${value}.`, false);
+              } else {
+                this.addToLog('Invalid fan speed. Please use a value between 0 and 5.', true);
+              }
+            } else if (args[0] === 'lights') {
+              const value = parseInt(args[1]);
+              if (!isNaN(value) && value >= 0 && value <= 100) {
+                this.state.lights = value;
+                this.addToLog(`Lights intensity set to ${value}%.`, false);
+              } else {
+                this.addToLog('Invalid light intensity. Please use a value between 0 and 100.', true);
+              }
+            } else if (args[0] === 'boosters') {
+              const value = parseInt(args[1]);
+              if (!isNaN(value) && value >= 0 && value <= 100) {
+                this.state.boosterSpeed = value;
+                this.state.boostersActive = value > 0;
+                this.addToLog(`Booster intensity set to ${value}%.`, false);
+              } else {
+                this.addToLog('Invalid booster intensity. Please use a value between 0 and 100.', true);
+              }
+            } else if (args[0] === 'door') {
+              const value = args[1];
+              if (value === 'open') {
+                this.state.doorOpen = true;
+                this.addToLog('Door opened.', false);
+              } else if (value === 'closed') {
+                this.state.doorOpen = false;
+                this.addToLog('Door closed.', false);
+              } else {
+                this.addToLog('Invalid door command. Use "set door open" or "set door closed".', true);
+              }
+            } else if (args[0] === 'defenses') {
+              const value = args[1];
+              if (value === 'online') {
+                this.state.defensesActive = true;
+                this.addToLog('Defense grid online.', false);
+              } else if (value === 'offline') {
+                this.state.defensesActive = false;
+                this.addToLog('Defense grid offline.', false);
+              } else {
+                this.addToLog('Invalid defense command. Use "set defenses online" or "set defenses offline".', true);
+              }
+            } else {
+              this.addToLog(`Unknown command: "${command}".`, true);
+            }
+          } else {
+            // Commands without arguments
+            const handler = this.commands.get(command);
+            if (handler) {
+              this.addToLog(`> ${command}`, false);
+              handler.handler();
+            } else {
+              this.addToLog(`Unknown command: "${command}".`, true);
+            }
+          }
+        }
+  
+        handleCommandInput(event) {
+          event.preventDefault();
+          const command = this.dom.commandInput.value.trim().toLowerCase();
+          if (command) {
+            this.executeCommand(command);
+            this.dom.commandInput.value = '';
+          }
+        }
+  
+        updateStatusDisplay() {
+          this.dom.currentMode.textContent = this.state.mode;
+          this.dom.lightsStatus.textContent = this.state.lights > 0 ? `${this.state.lights}%` : 'Off';
+          this.dom.fanStatus.textContent = this.state.fanSpeed > 0 ? `Speed ${this.state.fanSpeed}` : 'Off';
+          this.dom.doorStatus.textContent = this.state.doorOpen ? 'Open' : 'Closed';
+          this.dom.defenseStatus.textContent = this.state.defensesActive ? 'Online' : 'Offline';
+          this.dom.boostersStatus.textContent = this.state.boosterSpeed > 0 ? `${this.state.boosterSpeed}%` : 'Offline';
+          this.dom.energyOutput.textContent = `${this.state.energyOutput}%`;
+          this.dom.reactorOutput.textContent = `${this.state.arcReactorOutput}%`;
+          this.dom.integrityOutput.textContent = `${this.state.suitIntegrity}%`;
+        }
+  
+        updateGauges() {
+          this.setGaugeValue(this.dom.energyGauge, this.state.energyOutput, '#00ffcc');
+          this.setGaugeValue(this.dom.reactorGauge, this.state.arcReactorOutput, '#38bdf8');
+          this.setGaugeValue(this.dom.integrityGauge, this.state.suitIntegrity, '#8b5cf6');
+        }
+  
+        setGaugeValue(gaugeElement, value, color) {
+          const angle = (value / 100) * 360;
+          const gradient = `conic-gradient(${color} ${angle}deg, var(--bg-medium) ${angle}deg)`;
+          gaugeElement.style.background = gradient;
+        }
+
+        animateGaugeUpdate(prop) {
+          const gauge = this.dom[prop === 'suitIntegrity' ? 'integrityGauge' : prop.replace('Output', 'Gauge')];
+          gauge.style.animation = 'none';
+          void gauge.offsetWidth; // Trigger reflow
+          gauge.style.animation = null;
+        }
+        
+        updateHealthIndicator() {
+          let health = 'optimal';
+          if (this.state.energyOutput < 30 || this.state.arcReactorOutput < 30 || this.state.suitIntegrity < 30) {
+            health = 'critical';
+          } else if (this.state.energyOutput < 60 || this.state.arcReactorOutput < 60 || this.state.suitIntegrity < 60) {
+            health = 'warning';
+          }
+          this.dom.systemHealthIndicator.className = `status-indicator ${health}`;
+        }
+
+        runDiagnostics() {
+          setTimeout(() => {
+            this.addToLog(`- Lights: ${this.state.lights > 0 ? 'Operational' : 'Offline'}`, false);
+            this.addToLog(`- Fan: ${this.state.fanSpeed > 0 ? 'Operational' : 'Offline'}`, false);
+            this.addToLog(`- Door: ${this.state.doorOpen ? 'Open' : 'Closed'}`, false);
+            this.addToLog(`- Defenses: ${this.state.defensesActive ? 'Active' : 'Offline'}`, false);
+            this.addToLog(`- Boosters: ${this.state.boostersActive ? 'Active' : 'Offline'}`, false);
+            this.addToLog(`- Energy: ${this.state.energyOutput}%`, false);
+            this.addToLog(`- Reactor: ${this.state.arcReactorOutput}%`, false);
+            this.addToLog(`- Integrity: ${this.state.suitIntegrity}%`, false);
+            this.addToLog('Diagnostics complete. All systems confirmed.', false);
+          }, 1500);
+        }
+        
+        initSpeechRecognition() {
+          const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+          this.speechRecognition = new SpeechRecognition();
+          this.speechRecognition.interimResults = false;
+          this.speechRecognition.lang = 'en-US';
+  
+          this.speechRecognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript.trim().toLowerCase();
+            this.addToLog(`> Voice Command: "${transcript}"`, false);
+            this.dom.commandInput.value = transcript;
+            this.executeCommand(transcript);
+          };
+  
+          this.speechRecognition.onend = () => {
+            this.dom.voiceBtnIcon.textContent = '🎤';
+            this.dom.voiceBtn.classList.remove('listening');
+            this.dom.voiceBtn.setAttribute('aria-pressed', 'false');
+            if (this.isListening) {
+              this.speechRecognition.start();
+              this.dom.voiceBtn.classList.add('listening');
+              this.dom.voiceBtn.setAttribute('aria-pressed', 'true');
+            }
+          };
+  
+          this.speechRecognition.onerror = (event) => {
+            this.addToLog(`Voice recognition error: ${event.error}`, true);
+            this.dom.voiceBtn.classList.remove('listening');
+            this.dom.voiceBtn.setAttribute('aria-pressed', 'false');
+            this.dom.voiceBtnIcon.textContent = '🎤';
+            this.isListening = false;
+          };
+        }
+  
+        toggleVoiceCommand() {
+          if (!this.recognitionSupported) return;
+  
+          if (this.isListening) {
+            this.speechRecognition.stop();
+            this.isListening = false;
+            this.addToLog('Voice command deactivated.', false);
+          } else {
+            try {
+              this.speechRecognition.start();
+              this.dom.voiceBtnIcon.textContent = '■';
+              this.isListening = true;
+              this.addToLog('Voice command listening...', false);
+            } catch (e) {
+              this.addToLog('Voice recognition failed to start. Check your microphone and browser permissions.', true);
+              this.dom.voiceBtn.classList.remove('listening');
+              this.dom.voiceBtn.setAttribute('aria-pressed', 'false');
+              this.isListening = false;
+              this.dom.voiceBtnIcon.textContent = '🎤';
+            }
+          }
+        }
+      }
+  
+      document.addEventListener('DOMContentLoaded', () => {
+        new DashboardManager();
+      });
+    </script>
+  </body>
+  </html>
